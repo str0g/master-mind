@@ -1,0 +1,1 @@
+Trivial game for recruitation purpose.
