@@ -13,22 +13,23 @@
 
 namespace board4x6 {
     Board4x6 from_string(const std::string &in) {
-
         Board4x6 row;
-        row.board.f1 = in[0] - 48;
-        row.board.f2 = in[1] - 48;
-        row.board.f3 = in[2] - 48;
-        row.board.f4 = in[3] - 48;
+        auto* ptr = row.board.fx;
+        *ptr = in[0] - 48;
+        *(++ptr) = in[1] - 48;
+        *(++ptr) = in[2] - 48;
+        *(++ptr) = in[3] - 48;
         row.board.is_valid();
         return row;
     }
 
     std::string to_string(const Board4x6::Board4x6_t& obj) {
+        auto* ptr = obj.fx;
         return {
-                static_cast<char>(obj.f1 + 48),
-                static_cast<char>(obj.f2 + 48),
-                static_cast<char>(obj.f3 + 48),
-                static_cast<char>(obj.f4 + 48)
+                static_cast<char>(*ptr + 48),
+                static_cast<char>(*(++ptr) + 48),
+                static_cast<char>(*(++ptr) + 48),
+                static_cast<char>(*(++ptr) + 48)
         };
     }
 
@@ -38,48 +39,59 @@ namespace board4x6 {
                 throw std::invalid_argument("invalid row");
             }
         };
-        tester(f1);
-        tester(f2);
-        tester(f3);
-        tester(f4);
+        auto* ptr = fx;
+        tester(*ptr++);
+        tester(*ptr++);
+        tester(*ptr++);
+        tester(*ptr);
     }
 
     void Board4x6::Board4x6_t::random_set() {
         auto fun = []() {
             return (board_colors::none+1) + rand() % board_colors::black; // far from being random but does exactly what intended.
         };
-        f1 = fun();
-        f2 = fun();
-        f3 = fun();
-        f4 = fun();
+        auto* ptr = fx;
+        *ptr = fun();
+        *(++ptr) = fun();
+        *(++ptr) = fun();
+        *(++ptr) = fun();
     }
-
+//#define DBX
     ThreeStateCheck::StateCheck Board4x6::Board4x6_t::cmp(const Board4x6::Board4x6_t& obj) {
         ThreeStateCheck::StateCheck rc;
 
-        auto obj_str = to_string(obj);
-        auto this_str = to_string(*this);
+        auto size = sizeof(fx);
 
-        rc.resize(obj_str.size());
+        rc.resize(size);
 
-        for(auto i=0; i<this_str.size(); ++i) {
-            for(auto x=0; x<obj_str.size(); ++x) {
-                //std::cout << "i: " << i << " x: " << x << " this: " << this_str[i] << " obj:" << obj_str[x];
-                if(i==x and this_str[i] == obj_str[x]) {
-                    //std::cout << " active" << std::endl;
+        for(auto i=0; i<size; ++i) {
+            for(auto x=0; x<size; ++x) {
+#ifdef DBX
+                std::cout << "i: " << i << " x: " << x << " this: " << static_cast<int>(fx[i]) << " obj:" << static_cast<int>(obj.fx[x]);
+#endif
+                if(i==x and fx[i] == obj.fx[x]) {
+#ifdef DBX
+                    std::cout << " active" << std::endl;
+#endif
                     rc[i] = ThreeStateCheck::ACTIVE;
                     break;
                 }
                 if(rc[i]){
-                    //std::cout << " ignore" << std::endl;
+#ifdef DBX
+                    std::cout << " ignore" << std::endl;
+#endif
                     continue;
                 }
-                if(this_str[i] == obj_str[x]) {
-                    //std::cout << " incorrect" << std::endl;
-                    rc[i]= ThreeStateCheck::INCORRECT;
+                if(fx[i] == obj.fx[x]) {
+#ifdef DBX
+                    std::cout << " incorrect" << std::endl;
+#endif
+                    rc[i] = ThreeStateCheck::INCORRECT;
                     continue;
                 }
-                //std::cout << std::endl;
+#ifdef DBX
+                std::cout << std::endl;
+#endif
             }
         }
 
