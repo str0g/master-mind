@@ -10,11 +10,12 @@
 #include <stdexcept>
 #include <iostream>
 #include <fstream>
+#include <cstring>
 
 namespace board4x6 {
     Board4x6 from_string(const std::string &in) {
         Board4x6 row;
-        auto* ptr = row.board.fx;
+        auto *ptr = row.board.fx;
         *ptr = in[0] - 48;
         *(++ptr) = in[1] - 48;
         *(++ptr) = in[2] - 48;
@@ -23,14 +24,13 @@ namespace board4x6 {
         return row;
     }
 
-    std::string to_string(const Board4x6::Board4x6_t& obj) {
-        auto* ptr = obj.fx;
+    std::string to_string(const Board4x6::Board4x6_t &obj) {
+        auto *ptr = obj.fx;
         return {
                 static_cast<char>(*ptr + 48),
                 static_cast<char>(*(++ptr) + 48),
                 static_cast<char>(*(++ptr) + 48),
-                static_cast<char>(*(++ptr) + 48)
-        };
+                static_cast<char>(*(++ptr) + 48)};
     }
 
     void Board4x6::Board4x6_t::is_valid() {
@@ -39,7 +39,7 @@ namespace board4x6 {
                 throw std::invalid_argument("invalid row");
             }
         };
-        auto* ptr = fx;
+        auto *ptr = fx;
         tester(*ptr++);
         tester(*ptr++);
         tester(*ptr++);
@@ -48,57 +48,88 @@ namespace board4x6 {
 
     void Board4x6::Board4x6_t::random_set() {
         auto fun = []() {
-            return (board_colors::none+1) + rand() % board_colors::black; // far from being random but does exactly what intended.
+            return (board_colors::none + 1) + rand() % board_colors::black;// far from being random but does exactly what intended.
         };
-        auto* ptr = fx;
+        auto *ptr = fx;
         *ptr = fun();
         *(++ptr) = fun();
         *(++ptr) = fun();
         *(++ptr) = fun();
     }
-//#define DBX
-    ThreeStateCheck::StateCheck Board4x6::Board4x6_t::cmp(const Board4x6::Board4x6_t& obj) {
+
+    ThreeStateCheck::StateCheck Board4x6::Board4x6_t::cmp(const Board4x6::Board4x6_t &obj) {
         ThreeStateCheck::StateCheck rc;
 
-        auto size = sizeof(fx);
+        auto tab_init = [](unsigned char* out_tab, size_t out_size, const unsigned char* in_tab, size_t in_size) {
+            std::memset(out_tab, 0, out_size);
+            for(int i=0; i<in_size; ++i) {
+                out_tab[in_tab[i]] += 1;
+            }
+            for(int i=0; i<out_size; ++i) {
+                if(not out_tab[i]) {
+                    out_tab[i] = 0xff;
+                }
+            }
+        };
 
+        unsigned char none = 0xff;
+
+        unsigned char this_tab[board_colors::black+1];
+        tab_init(this_tab, sizeof(this_tab), fx, sizeof(fx));
+
+        unsigned char obj_tab[sizeof(this_tab)];
+        tab_init(obj_tab, sizeof(obj_tab), obj.fx, sizeof(obj.fx));
+
+        auto get_index = [](const unsigned char* fx, unsigned char num, int offset=0) {
+            auto *fxx = fx + offset;
+            auto *end = fx + sizeof(Board4x6::Board4x6_t::fx);
+            do {
+                if(*fxx == num) return fxx - fx;
+            } while(++fxx < end);
+            throw std::out_of_range("");
+        };
+
+        auto active_or_incorrect = [&](unsigned char val, int cnt){
+            int index = 0;
+            int index_obj = 0;
+            do {
+                try {
+                    index = get_index(fx, val, index);
+                    if(fx[index] == obj.fx[index]) {
+                        rc[index++] = ThreeStateCheck::ACTIVE;
+                        index_obj = index;
+                    } else {
+                        index_obj = get_index(obj.fx, val, index_obj);
+                        rc[index_obj++] = ThreeStateCheck::INCORRECT;
+                        ++index;
+                    }
+                } catch (const std::out_of_range& e) {
+                    //ignore
+                }
+            } while (cnt--);
+        };
+
+        auto size = sizeof(fx);
         rc.resize(size);
 
-        for(auto i=0; i<size; ++i) {
-            for(auto x=0; x<size; ++x) {
-#ifdef DBX
-                std::cout << "i: " << i << " x: " << x << " this: " << static_cast<int>(fx[i]) << " obj:" << static_cast<int>(obj.fx[x]);
-#endif
-                if(i==x and fx[i] == obj.fx[x]) {
-#ifdef DBX
-                    std::cout << " active" << std::endl;
-#endif
-                    rc[i] = ThreeStateCheck::ACTIVE;
-                    break;
+        for(int i=board_colors::blue; i<=board_colors::black; ++i) {
+            if(this_tab[i] == none and obj_tab[i] != none) continue;
+            if (this_tab[i] == none and obj_tab[i] == none) continue;
+            if (this_tab[i] != none and obj_tab[i] == none) continue;
+            auto res = this_tab[i] - obj_tab[i];
+            if(res) {
+                if(res < 0) {
+                    res *= -1;
                 }
-                if(rc[i]){
-#ifdef DBX
-                    std::cout << " ignore" << std::endl;
-#endif
-                    continue;
-                }
-                if(fx[i] == obj.fx[x]) {
-#ifdef DBX
-                    std::cout << " incorrect" << std::endl;
-#endif
-                    rc[i] = ThreeStateCheck::INCORRECT;
-                    continue;
-                }
-#ifdef DBX
-                std::cout << std::endl;
-#endif
+                active_or_incorrect(i, res);
+            } else {
+                auto cnt = this_tab[i];
+                active_or_incorrect(i, cnt);
             }
         }
-
         return rc;
     }
 }
-
 void BoardManager::new_board() {
     board.board.random_set();
 }

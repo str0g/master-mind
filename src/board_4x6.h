@@ -28,11 +28,6 @@ namespace board4x6 {
         struct Board4x6_t {
             uint8_t fx[4];
             void is_valid();
-            /**
-             * support for no duplicates
-             * @TODO support for duplicates
-             * @return correct value only for no duplicates.
-             */
             ThreeStateCheck::StateCheck cmp(const Board4x6_t&);
             void random_set();
         } board;

@@ -117,7 +117,7 @@ TEST_F(Test_Board4x6, cmp_order_mix) {
 
     //4321
     //3531
-    ASSERT_EQ(out, "0201");
+    ASSERT_EQ(out, "2001");
 }
 
 
@@ -137,7 +137,7 @@ TEST_F(Test_Board4x6, cmp_order_mix2) {
     std::cout << "out:" << out << std::endl;*/
     ASSERT_EQ(out, "0001");
 }
-/*
+
 TEST_F(Test_Board4x6, cmp_order_mix3) {
     board4x6::Board4x6 left = board4x6::from_string("2542");
     {
@@ -147,16 +147,33 @@ TEST_F(Test_Board4x6, cmp_order_mix3) {
         ASSERT_EQ(out, "2000");
     }
     {
-        board4x6::Board4x6 right = board4x6::from_string("1234");
-        auto res = left.board.cmp(right.board);
-        auto out = ThreeStateCheck::to_string(res);
-        ASSERT_EQ(out, "0200");
-    }
-    {
         board4x6::Board4x6 right = board4x6::from_string("4361");
         auto res = left.board.cmp(right.board);
         auto out = ThreeStateCheck::to_string(res);
         ASSERT_EQ(out, "2000");
     }
-
-}*/
+    {
+        board4x6::Board4x6 right = board4x6::from_string("1234");
+        auto res = left.board.cmp(right.board);
+        auto out = ThreeStateCheck::to_string(res);
+        ASSERT_EQ(out, "0202");
+    }
+    {
+        board4x6::Board4x6 right = board4x6::from_string("2261");
+        auto res = left.board.cmp(right.board);
+        auto out = ThreeStateCheck::to_string(res);
+        ASSERT_EQ(out, "1200");
+    }
+    {
+        board4x6::Board4x6 right = board4x6::from_string("3322");
+        auto res = left.board.cmp(right.board);
+        auto out = ThreeStateCheck::to_string(res);
+        ASSERT_EQ(out, "0021");
+    }
+    {
+        board4x6::Board4x6 right = board4x6::from_string("2322");
+        auto res = left.board.cmp(right.board);
+        auto out = ThreeStateCheck::to_string(res);
+        ASSERT_EQ(out, "1001");
+    }
+}
